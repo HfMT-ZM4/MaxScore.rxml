@@ -36,7 +36,7 @@
 
 void *rxml_class;
 
-t_symbol *ps_dictionary;
+t_symbol *ps_dictionary, *ps_0, *ps_ordering;
 
 using namespace rapidxml;
 
@@ -47,9 +47,6 @@ typedef struct _rxml
     t_critical lock;
     char *buf;
     size_t buflen, bufpos;
-    char *root;
-    size_t rootlen;
-    int rootcount;
 } rxml;
 
 extern "C" {
@@ -95,7 +92,7 @@ static void rxml_dictionary(rxml *x, t_symbol *s)
 }
 
 static void rxml_toJSON(rxml *x, const xml_node<> *node,
-                        t_dictionary *d, long index)
+                        t_dictionary *d)
 {
     assert(node);
     assert(d);
@@ -104,9 +101,8 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
     {
     case node_element:
     {
-        // printf("node_element: %s\n", node->name());
         t_dictionary *thiselem = dictionary_new();
-        t_symbol *thiselem_name = gensym(node->name());        
+        t_symbol *thiselem_name = gensym(node->name());
         if(dictionary_hasentry(d, thiselem_name))
         {
             t_dictionary *parent = NULL;
@@ -126,31 +122,41 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
         {
             t_dictionary *dd = dictionary_new();
             dictionary_appenddictionary(d, thiselem_name, (t_object *)dd);
-            dictionary_appenddictionary(dd, gensym("0"), (t_object *)thiselem);
+            dictionary_appenddictionary(dd, ps_0, (t_object *)thiselem);
         }
         
         for(const xml_attribute<> *a = node->first_attribute();
             a;
             a = a->next_attribute())
         {
-            // printf("node_element: %s: attribute: %s, %s\n", node->name(), a->name(), a->value());
             size_t n = strlen(a->name());
             char key[n + 2];
             snprintf(key, n + 2, "@%s", a->name());
             dictionary_appendstring(thiselem, gensym(key), a->value());
         }
 
+        
         long i = 0;
         for(const xml_node<> *n = node->first_node();
             n;
             n = n->next_sibling(), ++i)
+        {}
+
+        t_atom ordering[i];
+
+        i = 0;
+        for(const xml_node<> *n = node->first_node();
+            n;
+            n = n->next_sibling(), ++i)
         {
-            rxml_toJSON(x, n, thiselem, i);
+            atom_setsym(ordering + i, gensym(n->name()));
+            rxml_toJSON(x, n, thiselem);
         }
+        dictionary_appendatoms(thiselem, ps_ordering,
+                               i, ordering);
     }
     break;
     case node_data:
-        // printf("node_data: %s\n", node->value());
         break;
     default:
         object_error((t_object *)x,
@@ -183,18 +189,17 @@ static void rxml_bang(rxml *x)
     
     xml_document<> doc;
     doc.parse<0>(buf);
-
     xml_node<> *root = doc.first_node();
     if(!root)
     {
         object_error((t_object *)x, "No root!");
+        goto cleanup;
     }
     else
     {
         t_dictionary *d = dictionary_new();
-        rxml_toJSON(x, root, d, 0);
-        // postdictionary((t_object *)d);
-        // dictionary_dump(d, 1, 0);
+        rxml_toJSON(x, root, d);
+
         t_symbol *name = NULL;
         t_dictionary *dd = dictobj_register(d, &name);
         if(!dd || !name)
@@ -202,24 +207,31 @@ static void rxml_bang(rxml *x)
             object_error((t_object *)x, "Couldn't register dict");
             goto cleanup;
         }
-        object_post((t_object *)x, "%p %p\n", d, dd);
         t_atom out;
         atom_setsym(&out, name);
         outlet_anything(x->outlets[RXML_OUTLET_MAIN],
                         ps_dictionary, 1, &out);
         dictobj_release(dd);
     }
-
 cleanup:
+    if(buf)
+    {
+        free(buf);
+    }
     critical_enter(x->lock);
     memset(x->buf, 0, x->bufpos);
     x->bufpos = 0;
+    doc.clear();
     critical_exit(x->lock);
 }
 
 static void rxml_free(rxml *x)
 {
     critical_free(x->lock);
+    if(x->buf)
+    {
+        free(x->buf);
+    }
 }
 
 static void rxml_assist(rxml *x, void *b, long m, long a, char *s)
@@ -280,6 +292,8 @@ void ext_main(void *r)
 	class_register(CLASS_BOX, c);
 	rxml_class = c;
     ps_dictionary = gensym("dictionary");
+    ps_0 = gensym("0");
+    ps_ordering = gensym(".ordering");
 }
 
 } // extern "C"
