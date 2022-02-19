@@ -24,13 +24,50 @@
 #include "ext.h"
 #include "ext_obex.h"
 // for postdictionary for debugging
-#include "jpatcher_utils.h"
+// #include "jpatcher_utils.h"
 #include "ext_critical.h"
 #include "ext_dictobj.h"
 
 #include "rapidxml.hpp"
 
+// Workaround for an ancient bug that's never been fixed...
+// https://stackoverflow.com/questions/14113923/rapidxml-print-header-has-undefined-methods
+namespace rapidxml {
+    namespace internal {
+        template <class OutIt, class Ch>
+        inline OutIt print_children(OutIt out, const xml_node<Ch>* node, int flags, int indent);
+
+        template <class OutIt, class Ch>
+        inline OutIt print_attributes(OutIt out, const xml_node<Ch>* node, int flags);
+
+        template <class OutIt, class Ch>
+        inline OutIt print_data_node(OutIt out, const xml_node<Ch>* node, int flags, int indent);
+
+        template <class OutIt, class Ch>
+        inline OutIt print_cdata_node(OutIt out, const xml_node<Ch>* node, int flags, int indent);
+
+        template <class OutIt, class Ch>
+        inline OutIt print_element_node(OutIt out, const xml_node<Ch>* node, int flags, int indent);
+
+        template <class OutIt, class Ch>
+        inline OutIt print_declaration_node(OutIt out, const xml_node<Ch>* node, int flags, int indent);
+
+        template <class OutIt, class Ch>
+        inline OutIt print_comment_node(OutIt out, const xml_node<Ch>* node, int flags, int indent);
+
+        template <class OutIt, class Ch>
+        inline OutIt print_doctype_node(OutIt out, const xml_node<Ch>* node, int flags, int indent);
+
+        template <class OutIt, class Ch>
+        inline OutIt print_pi_node(OutIt out, const xml_node<Ch>* node, int flags, int indent);
+    }
+}
+#include "rapidxml_print.hpp"
+
 #include <assert.h>
+#include <iostream>
+#include <string>
+#include <sstream>
 
 #define RXML_OUTLET_MAIN 0
 
@@ -86,9 +123,304 @@ static void rxml_anything(rxml *x,
     
 }
 
-static void rxml_dictionary(rxml *x, t_symbol *s)
+static void rxml_outputXML(const rxml * const x,
+                           const xml_document<> * const doc)
 {
+    std::string s;
+    print(std::back_inserter(s), *doc, 0);
+    std::istringstream iss(s);
+    std::string nl;
+    while(std::getline(iss, nl, '\n'))
+    {
+        // std::cout << nl << "\n";
+        t_symbol *s = gensym(nl.c_str());
+        outlet_anything(x->outlets[RXML_OUTLET_MAIN], s, 0, NULL);
+    }
+}
 
+static xml_node<> *rxml_toXML(const rxml *x,
+                              xml_document<> *doc,
+                              const char * const elem,
+                              const t_dictionary * const d);
+
+static xml_node<> *rxml_toXML_entry(const rxml *x,
+                                    xml_document<> *doc,
+                                    const t_dictionary * const d,
+                                    const char * const elem,
+                                    const long nkeys,
+                                    const t_symbol * const *keys,
+                                    const long nordering,
+                                    const t_atom * const ordering)
+{
+    assert(x);
+    assert(doc);
+    assert(d);
+    assert(elem);
+    assert(keys);
+    if(nkeys && keys)
+    {
+        xml_node<> *node = doc->allocate_node(node_element, elem);
+        // attributes
+        for(long i = 0; i < nkeys; ++i)
+        {
+            if(keys[i]->s_name && keys[i]->s_name[0] == '@')
+            {
+                t_atom val;
+                t_max_err e = dictionary_getatom(d, (t_symbol *)keys[i], &val);
+                if(e)
+                {
+                    object_error((t_object *)x,
+                                 "dictionary_getatom() produced "
+                                 "an error: %d",
+                                 e);
+                    return NULL;
+                }
+                {
+                    if(atom_gettype(&val) == A_OBJ)
+                    {
+                        // this shouldn't happen, so...
+                        // assert(0);
+                        rxml_toXML(x, doc, keys[i]->s_name,
+                                   (t_dictionary *)atom_getobj(&val));
+                    }
+                    else
+                    {
+                        if(atom_gettype(&val) != A_SYM)
+                        {
+                            object_error((t_object *)x,
+                                         "found an entry that is "
+                                         "not a string");
+                            return node;
+                        }
+                        xml_attribute<> *attr =
+                            doc->allocate_attribute(keys[i]->s_name + 1,
+                                                    atom_getsym(&val)->s_name);
+                        node->append_attribute(attr);
+                    }
+                }
+            }
+            else
+            {
+                // assert(0);
+            }
+        }
+        // children
+        if(nordering)
+        {
+            t_hashtab *ht = hashtab_new(0);
+            for(long i = 0; i < nordering; ++i)
+            {
+                if(!dictionary_hasentry(d, atom_getsym(ordering + i)))
+                {
+                    object_error((t_object *)x,
+                                 "found a symbol in .ordering that "
+                                 "isn't in the dictionary");
+                    return node;
+                }
+                t_atom val;
+                t_max_err e = dictionary_getatom(d,
+                                                 atom_getsym(ordering + i),
+                                                 &val);
+                if(e)
+                {
+                    object_error((t_object *)x,
+                                 "dictionary_getatom() produced "
+                                 "an error: %d",
+                                 e);
+                    return NULL;
+                }
+                if(atom_gettype(&val) == A_OBJ)
+                {
+                    t_atom_long count;
+                    hashtab_lookuplong(ht, atom_getsym(ordering + i), &count);
+                    char buf[16];
+                    snprintf(buf, 16, "%ld", count);
+                    hashtab_storelong(ht, atom_getsym(ordering + i), count + 1);
+                    t_atom idxa;
+                    dictionary_getatom((t_dictionary *)atom_getobj(&val),
+                                       gensym(buf),
+                                       &idxa);
+                    if(atom_gettype(&idxa) != A_OBJ)
+                    {
+                        object_error((t_object *)x,
+                                     "found something other than a dict.");
+                        return NULL;                        
+                    }
+                    xml_node<> *nn =
+                        rxml_toXML(x, doc, atom_getsym(ordering + i)->s_name,
+                                   (t_dictionary *)atom_getobj(&idxa));
+                    // (t_dictionary *)atom_getobj(&val));
+                    node->append_node(nn);
+                }
+                else
+                {
+                    if(atom_gettype(&val) != A_SYM)
+                    {
+                        object_error((t_object *)x,
+                                     "found an entry that is "
+                                     "not a string");
+                        return node;
+                    }
+                    xml_node<> *nn =
+                        doc->allocate_node(node_element,
+                                           atom_getsym(ordering + i)->s_name,
+                                           atom_getsym(&val)->s_name);
+                    node->append_node(nn);
+                }
+            }
+            object_free((t_object *)ht);
+        }
+        else
+        {
+            for(long i = 0; i < nkeys; ++i)
+            {
+                if(keys[i]->s_name && keys[i]->s_name[0] != '@'
+                   && strcmp(keys[i]->s_name, ".ordering"))
+                {
+                    t_atom val;
+                    t_max_err e =
+                        dictionary_getatom(d, (t_symbol *)keys[i], &val);
+                    if(e)
+                    {
+                        object_error((t_object *)x,
+                                     "dictionary_getatom() produced "
+                                     "an error: %d",
+                                     e);
+                        return NULL;
+                    }
+
+                    if(atom_gettype(&val) == A_OBJ)
+                    {
+                        xml_node<> *nn =
+                            rxml_toXML(x, doc, elem,//keys[i]->s_name,
+                                       (t_dictionary *)atom_getobj(&val));
+                        node->append_node(nn);
+                    }
+                    else
+                    {
+                        if(atom_gettype(&val) != A_SYM)
+                        {
+                            object_error((t_object *)x,
+                                         "found an entry that is "
+                                         "not a string");
+                            return node;
+                        }
+                        xml_node<> *nn =
+                            doc->allocate_node(node_element,
+                                               keys[i]->s_name,
+                                               atom_getsym(&val)->s_name);
+                        node->append_node(nn);
+                    }
+
+                }
+                else
+                {
+                    // assert(0);
+                }
+            }
+        }
+        return node;
+    }
+    else
+    {
+        // assert(0);
+    }
+    return NULL;
+}
+
+static xml_node<> *rxml_toXML(const rxml *x,
+                              xml_document<> *doc,
+                              const char * const elem,
+                              const t_dictionary * const d)
+{
+    assert(x);
+    assert(doc);
+    assert(elem);
+    assert(d);
+    t_symbol **keys = NULL;
+    long nkeys = 0;
+    t_atom *ordering = NULL;
+    long nordering = 0;
+    if(dictionary_hasentry(d, ps_ordering))
+    {
+        dictionary_getatoms(d, ps_ordering, &nordering, &ordering);
+    }
+    dictionary_getkeys(d, &nkeys, &keys);
+    xml_node<> *n = rxml_toXML_entry(x, doc, d, elem, nkeys, keys,
+                                     nordering, ordering);
+    if(keys)
+    {
+        sysmem_freeptr(keys);
+    }
+    return n;
+}
+
+static void rxml_dictionary(rxml *x, const t_symbol * const s)
+{
+    assert(x);
+    assert(s);
+    xml_document<> doc;
+    xml_node<> *node = NULL;
+    t_dictionary *d = dictobj_findregistered_retain((t_symbol *)s);
+    if(!d)
+    {
+        object_error((t_object *)x, "Couldn't find dictionary %s",
+                     s->s_name);
+        return;
+    }
+    {
+        t_max_err e = MAX_ERR_NONE;
+        t_symbol **keys = NULL;
+        long nkeys = 0;
+        t_atom val;
+        e = dictionary_getkeys(d, &nkeys, &keys);
+        if(e != MAX_ERR_NONE)
+        {
+            object_error((t_object *)x,
+                         "dictionary_getkeys() returned an error: %d",
+                         e);
+            goto cleanup;
+        }
+        if(!nkeys || !keys)
+        {
+            object_error((t_object *)x, "dictionary is empty");
+            goto cleanup;
+        }
+        if(nkeys > 1)
+        {
+            object_error((t_object *)x,
+                         "malformed dictionary: "
+                         "more than one root node");
+            goto cleanup;
+        }
+        e = dictionary_getatom(d, keys[0], &val);
+        if(e != MAX_ERR_NONE)
+        {
+            object_error((t_object *)x,
+                         "dictionary_getatom() returned an error: %d",
+                         e);
+            goto cleanup;
+        }
+        if(atom_gettype(&val) != A_OBJ)
+        {
+            object_error((t_object *)x,
+                         "data for the root node is not a dict");
+            goto cleanup;
+        }
+        node = rxml_toXML(x, &doc, 
+                          keys[0]->s_name,
+                          (t_dictionary *)atom_getobj(&val));
+        doc.append_node(node);
+        rxml_outputXML(x, &doc);
+        if(keys)
+        {
+            sysmem_freeptr(keys);
+        }
+    }
+    
+cleanup:
+    dictobj_release(d);
+    doc.clear();
 }
 
 static void rxml_toJSON(rxml *x, const xml_node<> *node,
@@ -110,19 +442,23 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
                                                    (t_object **)&parent);
             if(e)
             {
-                object_error((t_object *)x, "Error converting to JSON");
+                object_error((t_object *)x,
+                             "Error converting to JSON");
                 return;
             }
             long nkeys = dictionary_getentrycount(parent);
             char k[32];
-            snprintf(k, 32, "%d", nkeys);
-            dictionary_appenddictionary(parent, gensym(k), (t_object *)thiselem);
+            snprintf(k, 32, "%ld", nkeys);
+            dictionary_appenddictionary(parent, gensym(k),
+                                        (t_object *)thiselem);
         }
         else
         {
             t_dictionary *dd = dictionary_new();
-            dictionary_appenddictionary(d, thiselem_name, (t_object *)dd);
-            dictionary_appenddictionary(dd, ps_0, (t_object *)thiselem);
+            dictionary_appenddictionary(d, thiselem_name,
+                                        (t_object *)dd);
+            dictionary_appenddictionary(dd, ps_0,
+                                        (t_object *)thiselem);
         }
         
         for(const xml_attribute<> *a = node->first_attribute();
@@ -132,7 +468,9 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
             size_t n = strlen(a->name());
             char key[n + 2];
             snprintf(key, n + 2, "@%s", a->name());
-            dictionary_appendstring(thiselem, gensym(key), a->value());
+            dictionary_appendstring(thiselem,
+                                    gensym(key),
+                                    a->value());
         }
 
         
@@ -152,8 +490,11 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
             atom_setsym(ordering + i, gensym(n->name()));
             rxml_toJSON(x, n, thiselem);
         }
-        dictionary_appendatoms(thiselem, ps_ordering,
-                               i, ordering);
+        if(i)
+        {
+            dictionary_appendatoms(thiselem, ps_ordering,
+                                   i, ordering);
+        }
     }
     break;
     case node_data:
@@ -198,10 +539,17 @@ static void rxml_bang(rxml *x)
     else
     {
         t_dictionary *d = dictionary_new();
-        rxml_toJSON(x, root, d);
+        rxml_toJSON(x, root->first_node(), d);
+        t_dictionary *rd = dictionary_new();
+        dictionary_appenddictionary(rd,
+                                    gensym(root->name()),
+                                    (t_object *)d);
+        dictionary_appendsym(d,
+                             ps_ordering,
+                             gensym(root->first_node()->name()));
 
         t_symbol *name = NULL;
-        t_dictionary *dd = dictobj_register(d, &name);
+        t_dictionary *dd = dictobj_register(rd, &name);
         if(!dd || !name)
         {
             object_error((t_object *)x, "Couldn't register dict");
