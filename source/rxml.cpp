@@ -165,8 +165,9 @@ static xml_node<> *rxml_toXML_entry(const rxml *x,
         {
             if(keys[i]->s_name && keys[i]->s_name[0] == '@')
             {
-                t_atom val;
-                t_max_err e = dictionary_getatom(d, (t_symbol *)keys[i], &val);
+                t_atom *vals = NULL;
+                long nvals = 0;
+                t_max_err e = dictionary_getatoms(d, (t_symbol *)keys[i], &nvals, &vals);
                 if(e)
                 {
                     object_error((t_object *)x,
@@ -176,27 +177,90 @@ static xml_node<> *rxml_toXML_entry(const rxml *x,
                     return NULL;
                 }
                 {
-                    if(atom_gettype(&val) == A_OBJ)
+                    char *str = NULL;
+                    long str_len = 0;
+                    t_max_err e = atom_gettext(nvals, vals, &str_len, &str, 0);
+                    if(e)
                     {
-                        // this shouldn't happen, so...
-                        // assert(0);
-                        rxml_toXML(x, doc, keys[i]->s_name,
-                                   (t_dictionary *)atom_getobj(&val));
+                        object_error((t_object *)x,
+                                     "encountered an error while "
+                                     "converting atoms to string");
+                        return NULL;
                     }
-                    else
+                    if(!str || str_len == 0)
                     {
-                        if(atom_gettype(&val) != A_SYM)
-                        {
-                            object_error((t_object *)x,
-                                         "found an entry that is "
-                                         "not a string");
-                            return node;
-                        }
-                        xml_attribute<> *attr =
-                            doc->allocate_attribute(keys[i]->s_name + 1,
-                                                    atom_getsym(&val)->s_name);
-                        node->append_attribute(attr);
+                        object_error((t_object *)x,
+                                     "couldn't convert atoms to string");
+                        return NULL;
                     }
+                    xml_attribute<> *attr =
+                        doc->allocate_attribute(keys[i]->s_name + 1,
+                                                strdup(str));
+                    node->append_attribute(attr);
+                    // if(vals)
+                    // {
+                    //     sysmem_freeptr(vals);
+                    // }
+                    if(str)
+                    {
+                        sysmem_freeptr(str);
+                    }
+
+                    // switch(atom_gettype(&val))
+                    // {
+                    // case A_OBJ:
+                    //     assert(0); // shouldn't happen
+                    //     break;
+                    // case A_LONG:
+                    // {
+                    //     char buf[64];
+                    //     snprintf(buf, 64, "%d", atom_getlong(&val));
+                    //     xml_attribute<> *attr =
+                    //         doc->allocate_attribute(keys[i]->s_name + 1,
+                    //                                 buf);
+                    //     node->append_attribute(attr);
+                    // }
+                    // break;
+                    // case A_FLOAT:
+                    // {
+                    //     char buf[64];
+                    //     snprintf(buf, 64, "%f", atom_getfloat(&val));
+                    //     xml_attribute<> *attr =
+                    //         doc->allocate_attribute(keys[i]->s_name + 1,
+                    //                                 buf);
+                    //     node->append_attribute(attr);
+                    // }
+                    // break;
+                    // case A_SYM:
+                    // {
+                    //     xml_attribute<> *attr =
+                    //         doc->allocate_attribute(keys[i]->s_name + 1,
+                    //                                 atom_getsym(&val)->s_name);
+                    //     node->append_attribute(attr);
+                    // }
+                    // break;
+                    // }
+                    // if(atom_gettype(&val) == A_OBJ)
+                    // {
+                    //     // this shouldn't happen, so...
+                    //     // assert(0);
+                    //     rxml_toXML(x, doc, keys[i]->s_name,
+                    //                (t_dictionary *)atom_getobj(&val));
+                    // }
+                    // else
+                    // {
+                    //     if(atom_gettype(&val) != A_SYM)
+                    //     {
+                    //         object_error((t_object *)x,
+                    //                      "found an entry that is "
+                    //                      "not a string");
+                    //         return node;
+                    //     }
+                    //     xml_attribute<> *attr =
+                    //         doc->allocate_attribute(keys[i]->s_name + 1,
+                    //                                 atom_getsym(&val)->s_name);
+                    //     node->append_attribute(attr);
+                    // }
                 }
             }
             else
@@ -298,18 +362,20 @@ static xml_node<> *rxml_toXML_entry(const rxml *x,
                     }
                     else
                     {
-                        if(atom_gettype(&val) != A_SYM)
-                        {
-                            object_error((t_object *)x,
-                                         "found an entry that is "
-                                         "not a string");
-                            return node;
-                        }
-                        xml_node<> *nn =
-                            doc->allocate_node(node_element,
-                                               keys[i]->s_name,
-                                               atom_getsym(&val)->s_name);
-                        node->append_node(nn);
+                        // This is a data node
+                        
+                        // if(atom_gettype(&val) != A_SYM)
+                        // {
+                        //     object_error((t_object *)x,
+                        //                  "found an entry that is "
+                        //                  "not a string");
+                        //     return node;
+                        // }
+                        // xml_node<> *nn =
+                        //     doc->allocate_node(node_element,
+                        //                        keys[i]->s_name,
+                        //                        atom_getsym(&val)->s_name);
+                        // node->append_node(nn);
                     }
 
                 }
@@ -468,9 +534,30 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
             size_t n = strlen(a->name());
             char key[n + 2];
             snprintf(key, n + 2, "@%s", a->name());
-            dictionary_appendstring(thiselem,
-                                    gensym(key),
-                                    a->value());
+            // if(1)
+            {
+                t_atom *vals = NULL;
+                long nvals = 0;
+                t_max_err e = atom_setparse(&nvals, &vals, a->value());
+                if(e)
+                {
+                    object_error((t_object *)x,
+                                 "encountered an error parsing string "
+                                 "to atom array");
+                    return;
+                }
+                if(vals && nvals)
+                {
+                    dictionary_appendatoms(thiselem, gensym(key),
+                                           nvals, vals);
+                }
+            }
+            // else
+            // {
+            //     dictionary_appendstring(thiselem,
+            //                             gensym(key),
+            //                             a->value());
+            // }
         }
 
         
@@ -498,6 +585,7 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
     }
     break;
     case node_data:
+        assert(0);
         break;
     default:
         object_error((t_object *)x,
