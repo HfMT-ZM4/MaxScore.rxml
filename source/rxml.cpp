@@ -133,6 +133,11 @@ static void rxml_outputXML(const rxml * const x,
     while(std::getline(iss, nl, '\n'))
     {
         // std::cout << nl << "\n";
+        // object_post((t_object *)x, "len = %d", nl.length());
+        if(nl.length() == 0)
+        {
+            continue;
+        }
         t_symbol *s = gensym(nl.c_str());
         outlet_anything(x->outlets[RXML_OUTLET_MAIN], s, 0, NULL);
     }
