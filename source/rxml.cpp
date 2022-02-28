@@ -617,7 +617,34 @@ static void rxml_bang(rxml *x)
     buf[bufpos] = 0;
     
     xml_document<> doc;
+    try{
     doc.parse<0>(buf);
+    }
+    catch (const std::runtime_error& e)
+    {
+        //std::cerr << "Runtime error was: " << e.what() << std::endl;
+        object_error((t_object *)x, "Runtime error: %s", e.what());
+        return;
+    }
+    catch (const rapidxml::parse_error& e)
+    {
+        object_error((t_object *)x, "Parse error: %s", e.what());
+        //std::cerr << "Parse error was: " << e.what() << std::endl;
+        return;
+    }
+    catch (const std::exception& e)
+    {
+        object_error((t_object *)x, "Error: %s", e.what());
+        //std::cerr << "Error was: " << e.what() << std::endl;
+        return;
+    }
+    catch (...)
+    {
+        object_error((t_object *)x, "Unknown error");
+        // std::cerr << "An unknown error occurred." << std::endl;
+        return;
+    }
+    
     xml_node<> *root = doc.first_node();
     if(!root)
     {
