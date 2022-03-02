@@ -254,8 +254,20 @@ namespace rapidxml
             if (node->value_size() == 0 && !node->first_node())
             {
                 // Print childless node tag ending
-                *out = Ch('/'), ++out;
-                *out = Ch('>'), ++out;
+                if(0)
+                {
+                    *out = Ch('/'), ++out;
+                    *out = Ch('>'), ++out;
+                }
+                else
+                {
+                    *out = Ch('>'), ++out;
+                    // Print node end
+                    *out = Ch('<'), ++out;
+                    *out = Ch('/'), ++out;
+                    out = copy_chars(node->name(), node->name() + node->name_size(), out);
+                    *out = Ch('>'), ++out;
+                }
             }
             else
             {
