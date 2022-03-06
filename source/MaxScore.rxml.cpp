@@ -746,7 +746,7 @@ static void *rxml_new(t_symbol *sym, long ac, t_atom *av)
 
 void ext_main(void *r)
 {
-	t_class *c = class_new("rxml",
+	t_class *c = class_new("MaxScore.rxml",
                            (method)rxml_new,
                            (method)rxml_free,
                            (short)sizeof(rxml),

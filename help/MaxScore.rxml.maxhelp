@@ -167,8 +167,8 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 222.0, 501.0, 31.0, 22.0 ],
-					"text" : "rxml"
+					"patching_rect" : [ 222.0, 501.0, 89.0, 22.0 ],
+					"text" : "MaxScore.rxml"
 				}
 
 			}
@@ -179,8 +179,8 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 222.0, 424.0, 31.0, 22.0 ],
-					"text" : "rxml"
+					"patching_rect" : [ 222.0, 424.0, 89.0, 22.0 ],
+					"text" : "MaxScore.rxml"
 				}
 
 			}
@@ -341,8 +341,8 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 222.0, 371.0, 31.0, 22.0 ],
-					"text" : "rxml"
+					"patching_rect" : [ 222.0, 371.0, 89.0, 22.0 ],
+					"text" : "MaxScore.rxml"
 				}
 
 			}
@@ -790,6 +790,10 @@
 			}
  ],
 		"dependency_cache" : [ 			{
+				"name" : "MaxScore.rxml.mxo",
+				"type" : "iLaX"
+			}
+, 			{
 				"name" : "fit_jweb_to_bounds.js",
 				"bootpath" : "C74:/packages/Node for Max/patchers/debug-monitor",
 				"type" : "TEXT",
@@ -813,10 +817,6 @@
 				"bootpath" : "C74:/packages/Node for Max/patchers/debug-monitor",
 				"type" : "TEXT",
 				"implicit" : 1
-			}
-, 			{
-				"name" : "rxml.mxo",
-				"type" : "iLaX"
 			}
 , 			{
 				"name" : "sadam.rapidXML.mxo",

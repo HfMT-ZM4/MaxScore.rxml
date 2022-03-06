@@ -9,12 +9,12 @@
 /* Begin PBXBuildFile section */
 		521D23AB2750F11300DBD422 /* commonsyms.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DABC17274E71F2006D4C45 /* commonsyms.c */; };
 		521D23AF2750F11300DBD422 /* MaxAPI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52DABC19274E7207006D4C45 /* MaxAPI.framework */; };
-		52D5BF2D27BA4A5800E6F584 /* rxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52D5BF2C27BA4A5800E6F584 /* rxml.cpp */; };
+		52AC406827D56A1C00D651A1 /* MaxScore.rxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52AC406727D56A1C00D651A1 /* MaxScore.rxml.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		521D23B42750F11300DBD422 /* rxml.mxo */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = rxml.mxo; sourceTree = BUILT_PRODUCTS_DIR; };
-		52D5BF2C27BA4A5800E6F584 /* rxml.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = rxml.cpp; sourceTree = "<group>"; };
+		521D23B42750F11300DBD422 /* MaxScore.rxml.mxo */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MaxScore.rxml.mxo; sourceTree = BUILT_PRODUCTS_DIR; };
+		52AC406727D56A1C00D651A1 /* MaxScore.rxml.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MaxScore.rxml.cpp; sourceTree = "<group>"; };
 		52DABC17274E71F2006D4C45 /* commonsyms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = commonsyms.c; path = "../../max-sdk-base/c74support/max-includes/common/commonsyms.c"; sourceTree = "<group>"; };
 		52DABC19274E7207006D4C45 /* MaxAPI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MaxAPI.framework; path = "../../max-sdk-base/c74support/max-includes/MaxAPI.framework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -34,7 +34,7 @@
 		089C166AFE841209C02AAC07 /* iterator */ = {
 			isa = PBXGroup;
 			children = (
-				52D5BF2C27BA4A5800E6F584 /* rxml.cpp */,
+				52AC406727D56A1C00D651A1 /* MaxScore.rxml.cpp */,
 				52DABC17274E71F2006D4C45 /* commonsyms.c */,
 				52DABC19274E7207006D4C45 /* MaxAPI.framework */,
 				19C28FB4FE9D528D11CA2CBB /* Products */,
@@ -45,7 +45,7 @@
 		19C28FB4FE9D528D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				521D23B42750F11300DBD422 /* rxml.mxo */,
+				521D23B42750F11300DBD422 /* MaxScore.rxml.mxo */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -63,9 +63,9 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		521D23A62750F11300DBD422 /* rxml */ = {
+		521D23A62750F11300DBD422 /* MaxScore.rxml */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 521D23B12750F11300DBD422 /* Build configuration list for PBXNativeTarget "rxml" */;
+			buildConfigurationList = 521D23B12750F11300DBD422 /* Build configuration list for PBXNativeTarget "MaxScore.rxml" */;
 			buildPhases = (
 				521D23A72750F11300DBD422 /* Headers */,
 				521D23A82750F11300DBD422 /* Resources */,
@@ -77,9 +77,9 @@
 			);
 			dependencies = (
 			);
-			name = rxml;
+			name = MaxScore.rxml;
 			productName = iterator;
-			productReference = 521D23B42750F11300DBD422 /* rxml.mxo */;
+			productReference = 521D23B42750F11300DBD422 /* MaxScore.rxml.mxo */;
 			productType = "com.apple.product-type.bundle";
 		};
 /* End PBXNativeTarget section */
@@ -102,7 +102,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				521D23A62750F11300DBD422 /* rxml */,
+				521D23A62750F11300DBD422 /* MaxScore.rxml */,
 			);
 		};
 /* End PBXProject section */
@@ -132,8 +132,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				52D5BF2D27BA4A5800E6F584 /* rxml.cpp in Sources */,
 				521D23AB2750F11300DBD422 /* commonsyms.c in Sources */,
+				52AC406827D56A1C00D651A1 /* MaxScore.rxml.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -320,7 +320,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Development;
 		};
-		521D23B12750F11300DBD422 /* Build configuration list for PBXNativeTarget "rxml" */ = {
+		521D23B12750F11300DBD422 /* Build configuration list for PBXNativeTarget "MaxScore.rxml" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				521D23B22750F11300DBD422 /* Development */,
