@@ -90,7 +90,7 @@
 			attributes = {
 				LastUpgradeCheck = 1300;
 			};
-			buildConfigurationList = 2FBBEACF08F335010078DB84 /* Build configuration list for PBXProject "rxml" */;
+			buildConfigurationList = 2FBBEACF08F335010078DB84 /* Build configuration list for PBXProject "MaxScore.rxml" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 1;
@@ -162,6 +162,7 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
 				DEPLOYMENT_LOCATION = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				DSTROOT = "$(SRCROOT)/..";
@@ -178,6 +179,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_MASTER_OBJECT_FILE = YES;
+				GENERATE_PROFILING_CODE = YES;
 				HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/../../max-sdk-base/c74support/max-includes\"",
 					"\"$(SRCROOT)/rapidxml\"",
@@ -192,6 +194,9 @@
 				PRELINK_LIBS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "de.hfmt-hamburg.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = rxml;
+				SKIP_INSTALL = NO;
+				STRIP_INSTALLED_PRODUCT = NO;
+				SYMROOT = "$(SRCROOT)/build";
 				WRAPPER_EXTENSION = mxo;
 			};
 			name = Development;
@@ -246,6 +251,8 @@
 				PRELINK_LIBS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "de.hfmt-hamburg.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = rxml;
+				SKIP_INSTALL = NO;
+				SYMROOT = "$(SRCROOT)/build";
 				WRAPPER_EXTENSION = mxo;
 			};
 			name = Deployment;
@@ -311,7 +318,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2FBBEACF08F335010078DB84 /* Build configuration list for PBXProject "rxml" */ = {
+		2FBBEACF08F335010078DB84 /* Build configuration list for PBXProject "MaxScore.rxml" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2FBBEAD008F335010078DB84 /* Development */,

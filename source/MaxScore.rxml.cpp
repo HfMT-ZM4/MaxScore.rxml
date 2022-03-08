@@ -87,6 +87,8 @@ typedef struct _rxml
 } rxml;
 
 extern "C" {
+static void clearbuf(rxml *x);
+
 static void rxml_anything(rxml *x,
                           const t_symbol * const s,
                           const long ac, const t_atom *av)
@@ -103,14 +105,17 @@ static void rxml_anything(rxml *x,
     if(len + bufpos >= buflen)
     {
         buflen += 250000;
+        critical_enter(x->lock);
         char *buf = (char *)realloc(x->buf, x->buflen);
         if(buf)
         {
             object_error((t_object *)x, "Out of memory!\n");
+            x->buf = NULL;
+            x->buflen = 0;
+            x->bufpos = 0;
             critical_exit(x->lock);
             return;
         }
-        critical_enter(x->lock);
         x->buflen = buflen;
         x->buf = buf;
         critical_exit(x->lock);
@@ -607,6 +612,7 @@ static void rxml_bang(rxml *x)
     critical_exit(x->lock);
     if(!bufpos)
     {
+        object_error((t_object *)x, "no text to process");
         return;
     }
     char *buf = (char *)malloc(bufpos + 1);
@@ -629,24 +635,28 @@ static void rxml_bang(rxml *x)
     {
         //std::cerr << "Runtime error was: " << e.what() << std::endl;
         object_error((t_object *)x, "Runtime error: %s", e.what());
+        clearbuf(x);
         return;
     }
     catch (const rapidxml::parse_error& e)
     {
         object_error((t_object *)x, "Parse error: %s", e.what());
         //std::cerr << "Parse error was: " << e.what() << std::endl;
+        clearbuf(x);
         return;
     }
     catch (const std::exception& e)
     {
         object_error((t_object *)x, "Error: %s", e.what());
         //std::cerr << "Error was: " << e.what() << std::endl;
+        clearbuf(x);
         return;
     }
     catch (...)
     {
         object_error((t_object *)x, "Unknown error");
         // std::cerr << "An unknown error occurred." << std::endl;
+        clearbuf(x);
         return;
     }
     
@@ -691,6 +701,16 @@ cleanup:
     x->bufpos = 0;
     doc.clear();
     critical_exit(x->lock);
+}
+
+static void clearbuf(rxml *x)
+{
+    assert(x);
+    if(x->buf)
+    {
+        memset(x->buf, 0, x->buflen);
+    }
+    x->bufpos = 0;
 }
 
 static void rxml_free(rxml *x)
