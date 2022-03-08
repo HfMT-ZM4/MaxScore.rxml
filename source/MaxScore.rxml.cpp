@@ -668,16 +668,16 @@ static void rxml_bang(rxml *x)
     }
     else
     {
-        t_dictionary *d = dictionary_new();
-        rxml_toJSON(x, root->first_node(), d);
+        // t_dictionary *d = dictionary_new();
+        // rxml_toJSON(x, root->first_node(), d);
         t_dictionary *rd = dictionary_new();
-        dictionary_appenddictionary(rd,
-                                    gensym(root->name()),
-                                    (t_object *)d);
-        dictionary_appendsym(d,
-                             ps_ordering,
-                             gensym(root->first_node()->name()));
-
+        // dictionary_appenddictionary(rd,
+        //                             gensym(root->name()),
+        //                             (t_object *)d);
+        // dictionary_appendsym(d,
+        //                      ps_ordering,
+        //                      gensym(root->first_node()->name()));
+        rxml_toJSON(x, root, rd);
         t_symbol *name = NULL;
         t_dictionary *dd = dictobj_register(rd, &name);
         if(!dd || !name)
