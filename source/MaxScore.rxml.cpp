@@ -558,8 +558,17 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
                 }
                 if(vals && nvals)
                 {
-                    dictionary_appendatoms(thiselem, gensym(key),
-                                           nvals, vals);
+                    if(nvals == 1)
+                    {
+                        dictionary_appendatom(thiselem,
+                                              gensym(key),
+                                              vals);
+                    }
+                    else
+                    {
+                        dictionary_appendatoms(thiselem, gensym(key),
+                                               nvals, vals);
+                    }
                 }
             }
             // else
