@@ -86,6 +86,15 @@ typedef struct _rxml
     size_t buflen, bufpos;
 } rxml;
 
+#ifdef RAPIDXML_NO_EXCEPTIONS
+void rapidxml::parse_error_handler(const char *what, void *where)
+{
+    std::cout << "Parse error: " << what << "\n";
+    // this function must not return
+    std::abort();
+}
+#endif
+
 extern "C" {
 static void clearbuf(rxml *x);
 
@@ -544,7 +553,6 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
             size_t n = strlen(a->name());
             char key[n + 2];
             snprintf(key, n + 2, "@%s", a->name());
-            // if(1)
             {
                 t_atom *vals = NULL;
                 long nvals = 0;
@@ -571,40 +579,47 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
                     }
                 }
             }
-            // else
-            // {
-            //     dictionary_appendstring(thiselem,
-            //                             gensym(key),
-            //                             a->value());
-            // }
         }
 
-        
         long i = 0;
         for(const xml_node<> *n = node->first_node();
             n;
-            n = n->next_sibling(), ++i)
-        {}
-
-        t_atom ordering[i];
-
-        i = 0;
-        for(const xml_node<> *n = node->first_node();
-            n;
-            n = n->next_sibling(), ++i)
+            n = n->next_sibling())
         {
-            atom_setsym(ordering + i, gensym(n->name()));
-            rxml_toJSON(x, n, thiselem);
+            if(n->type() == node_element)
+            {
+                ++i;
+            }
         }
-        if(i)
+
         {
-            dictionary_appendatoms(thiselem, ps_ordering,
-                                   i, ordering);
+            t_atom ordering[i];
+            i = 0;
+            for(const xml_node<> *n = node->first_node();
+                n;
+                n = n->next_sibling())
+            {
+                if(n->type() == node_element)
+                {
+                    atom_setsym(ordering + i, gensym(n->name()));
+                    ++i;
+                }
+                rxml_toJSON(x, n, thiselem);
+            }
+            if(i)
+            {
+                dictionary_appendatoms(thiselem, ps_ordering,
+                                       i, ordering);
+            }
         }
     }
     break;
     case node_data:
-        assert(0);
+    {
+        dictionary_appendsym(d,
+                             gensym(".text"),
+                             gensym(node->value()));
+    }
         break;
     default:
         object_error((t_object *)x,
@@ -637,8 +652,13 @@ static void rxml_bang(rxml *x)
     buf[bufpos] = 0;
     
     xml_document<> doc;
+
+    // RAPIDXML_NO_EXCEPTIONS is defined in the Xcode project when
+    // building in debug mode, which will cause an assertion to
+    // fire in the case of an error.
+#ifndef RAPIDXML_NO_EXCEPTIONS
     try{
-    doc.parse<0>(buf);
+        doc.parse<0>(buf);
     }
     catch (const std::runtime_error& e)
     {
@@ -668,6 +688,9 @@ static void rxml_bang(rxml *x)
         clearbuf(x);
         return;
     }
+#else
+    doc.parse<0>(buf);
+#endif
     
     xml_node<> *root = doc.first_node();
     if(!root)
@@ -712,6 +735,12 @@ cleanup:
     critical_exit(x->lock);
 }
 
+static void rxml_clear(rxml *x)
+{
+    clearbuf(x);
+}
+
+__attribute__((used))
 static void clearbuf(rxml *x)
 {
     assert(x);
@@ -783,6 +812,7 @@ void ext_main(void *r)
 
     class_addmethod(c, (method)rxml_anything, "anything", A_GIMME, 0);
     class_addmethod(c, (method)rxml_bang, "bang", 0);
+    class_addmethod(c, (method)rxml_clear, "clear", 0);
     class_addmethod(c, (method)rxml_dictionary, "dictionary", A_SYM, 0);
 	class_addmethod(c, (method)rxml_assist,	"assist", A_CANT, 0);
 

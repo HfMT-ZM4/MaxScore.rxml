@@ -189,7 +189,7 @@
 				LIBRARY_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "-DH5_USE_110_API";
+				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "@../../max-sdk-base/c74support/max-includes/c74_linker_flags.txt";
 				PRELINK_LIBS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "de.hfmt-hamburg.${PRODUCT_NAME:rfc1034identifier}";
@@ -246,7 +246,7 @@
 				INSTALL_PATH = externals;
 				LIBRARY_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				OTHER_CFLAGS = "-DH5_USE_110_API";
+				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "@../../max-sdk-base/c74support/max-includes/c74_linker_flags.txt";
 				PRELINK_LIBS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "de.hfmt-hamburg.${PRODUCT_NAME:rfc1034identifier}";
@@ -275,7 +275,10 @@
 				INSTALL_PATH = "$(inherited)";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = "$(inherited)";
-				OTHER_CFLAGS = "$(inherited)";
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DRAPIDXML_NO_EXCEPTIONS",
+				);
 				OTHER_CPLUSPLUSFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				PRELINK_LIBS = "$(inherited)";
