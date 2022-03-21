@@ -214,12 +214,8 @@ static xml_node<> *rxml_toXML_entry(const rxml *x,
                     }
                     xml_attribute<> *attr =
                         doc->allocate_attribute(keys[i]->s_name + 1,
-                                                strdup(str));
+                                                doc->allocate_string(str));
                     node->append_attribute(attr);
-                    // if(vals)
-                    // {
-                    //     sysmem_freeptr(vals);
-                    // }
                     if(str)
                     {
                         sysmem_freeptr(str);
@@ -524,6 +520,7 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
                         dictionary_appendatoms(thiselem, gensym(key),
                                                nvals, vals);
                     }
+                    sysmem_freeptr(vals);
                 }
             }
         }
@@ -676,6 +673,8 @@ static void rxml_bang(rxml *x)
                 goto cleanup;
             }
             dictionary_chuckentry(rd, gensym(root->name()));
+            dictionary_chuckentry(d, gensym("0"));
+            object_free((t_object *)d);
             dictionary_appenddictionary(rd,
                                         gensym(root->name()),
                                         (t_object *)dd);
