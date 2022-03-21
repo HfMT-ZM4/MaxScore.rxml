@@ -175,10 +175,10 @@ static xml_node<> *rxml_toXML_entry(const rxml *x,
     assert(doc);
     assert(d);
     assert(elem);
-    assert(keys);
+    //assert(keys);
+    xml_node<> *node = doc->allocate_node(node_element, elem);
     if(nkeys && keys)
     {
-        xml_node<> *node = doc->allocate_node(node_element, elem);
         // attributes
         for(long i = 0; i < nkeys; ++i)
         {
@@ -224,62 +224,6 @@ static xml_node<> *rxml_toXML_entry(const rxml *x,
                     {
                         sysmem_freeptr(str);
                     }
-
-                    // switch(atom_gettype(&val))
-                    // {
-                    // case A_OBJ:
-                    //     assert(0); // shouldn't happen
-                    //     break;
-                    // case A_LONG:
-                    // {
-                    //     char buf[64];
-                    //     snprintf(buf, 64, "%d", atom_getlong(&val));
-                    //     xml_attribute<> *attr =
-                    //         doc->allocate_attribute(keys[i]->s_name + 1,
-                    //                                 buf);
-                    //     node->append_attribute(attr);
-                    // }
-                    // break;
-                    // case A_FLOAT:
-                    // {
-                    //     char buf[64];
-                    //     snprintf(buf, 64, "%f", atom_getfloat(&val));
-                    //     xml_attribute<> *attr =
-                    //         doc->allocate_attribute(keys[i]->s_name + 1,
-                    //                                 buf);
-                    //     node->append_attribute(attr);
-                    // }
-                    // break;
-                    // case A_SYM:
-                    // {
-                    //     xml_attribute<> *attr =
-                    //         doc->allocate_attribute(keys[i]->s_name + 1,
-                    //                                 atom_getsym(&val)->s_name);
-                    //     node->append_attribute(attr);
-                    // }
-                    // break;
-                    // }
-                    // if(atom_gettype(&val) == A_OBJ)
-                    // {
-                    //     // this shouldn't happen, so...
-                    //     // assert(0);
-                    //     rxml_toXML(x, doc, keys[i]->s_name,
-                    //                (t_dictionary *)atom_getobj(&val));
-                    // }
-                    // else
-                    // {
-                    //     if(atom_gettype(&val) != A_SYM)
-                    //     {
-                    //         object_error((t_object *)x,
-                    //                      "found an entry that is "
-                    //                      "not a string");
-                    //         return node;
-                    //     }
-                    //     xml_attribute<> *attr =
-                    //         doc->allocate_attribute(keys[i]->s_name + 1,
-                    //                                 atom_getsym(&val)->s_name);
-                    //     node->append_attribute(attr);
-                    // }
                 }
             }
             else
@@ -410,7 +354,7 @@ static xml_node<> *rxml_toXML_entry(const rxml *x,
     {
         // assert(0);
     }
-    return NULL;
+    return node;
 }
 
 static xml_node<> *rxml_toXML(const rxml *x,
@@ -495,7 +439,10 @@ static void rxml_dictionary(rxml *x, const t_symbol * const s)
         node = rxml_toXML(x, &doc, 
                           keys[0]->s_name,
                           (t_dictionary *)atom_getobj(&val));
-        doc.append_node(node);
+        if(node)
+        {
+        	doc.append_node(node);
+        }
         rxml_outputXML(x, &doc);
         if(keys)
         {
@@ -620,7 +567,7 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
                              gensym(".text"),
                              gensym(node->value()));
     }
-        break;
+    break;
     default:
         object_error((t_object *)x,
                      "Encountered unexpected node type: %d",
@@ -700,16 +647,39 @@ static void rxml_bang(rxml *x)
     }
     else
     {
-        // t_dictionary *d = dictionary_new();
-        // rxml_toJSON(x, root->first_node(), d);
         t_dictionary *rd = dictionary_new();
-        // dictionary_appenddictionary(rd,
-        //                             gensym(root->name()),
-        //                             (t_object *)d);
-        // dictionary_appendsym(d,
-        //                      ps_ordering,
-        //                      gensym(root->first_node()->name()));
         rxml_toJSON(x, root, rd);
+        {
+			// the root node is special--the file cannot contain
+            // multiple copies of it, so it shouldn't have an index
+            t_dictionary *d = NULL;
+            t_max_err e = dictionary_getdictionary(rd,
+                                                   gensym(root->name()),
+                                                   (t_object **)&d);
+            if(e)
+            {
+                object_error((t_object *)x,
+                             "error converting to dict: "
+                             "no root node was created (%d)",
+                             e);
+                goto cleanup;
+            }
+            t_dictionary *dd = NULL;
+            e = dictionary_getdictionary(d,
+                                         gensym("0"),
+                                         (t_object **)&dd);
+            if(e)
+            {
+                object_error((t_object *)x,
+                             "error converting to dict (%d)",
+                             e);
+                goto cleanup;
+            }
+            dictionary_chuckentry(rd, gensym(root->name()));
+            dictionary_appenddictionary(rd,
+                                        gensym(root->name()),
+                                        (t_object *)dd);
+        }
         t_symbol *name = NULL;
         t_dictionary *dd = dictobj_register(rd, &name);
         if(!dd || !name)
