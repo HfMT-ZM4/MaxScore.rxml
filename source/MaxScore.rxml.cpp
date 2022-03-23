@@ -73,7 +73,7 @@ namespace rapidxml {
 
 void *rxml_class;
 
-t_symbol *ps_dictionary, *ps_0, *ps_ordering;
+t_symbol *ps_dictionary, *ps_0, *ps_ordering, *ps_text;
 
 using namespace rapidxml;
 
@@ -322,19 +322,18 @@ static xml_node<> *rxml_toXML_entry(const rxml *x,
                     else
                     {
                         // This is a data node
-                        
-                        // if(atom_gettype(&val) != A_SYM)
-                        // {
-                        //     object_error((t_object *)x,
-                        //                  "found an entry that is "
-                        //                  "not a string");
-                        //     return node;
-                        // }
-                        // xml_node<> *nn =
-                        //     doc->allocate_node(node_element,
-                        //                        keys[i]->s_name,
-                        //                        atom_getsym(&val)->s_name);
-                        // node->append_node(nn);
+                        if(atom_gettype(&val) != A_SYM)
+                        {
+                            object_error((t_object *)x,
+                                         "found an entry that is "
+                                         "not a string");
+                            return node;
+                        }
+                        xml_node<> *nn =
+                            doc->allocate_node(node_data,
+                                               keys[i]->s_name,
+                                               atom_getsym(&val)->s_name);
+                        node->append_node(nn);
                     }
 
                 }
@@ -561,7 +560,7 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
     case node_data:
     {
         dictionary_appendsym(d,
-                             gensym(".text"),
+                             ps_text,
                              gensym(node->value()));
     }
     break;
@@ -663,7 +662,7 @@ static void rxml_bang(rxml *x)
             }
             t_dictionary *dd = NULL;
             e = dictionary_getdictionary(d,
-                                         gensym("0"),
+                                         ps_0,
                                          (t_object **)&dd);
             if(e)
             {
@@ -673,7 +672,7 @@ static void rxml_bang(rxml *x)
                 goto cleanup;
             }
             dictionary_chuckentry(rd, gensym(root->name()));
-            dictionary_chuckentry(d, gensym("0"));
+            dictionary_chuckentry(d, ps_0);
             object_free((t_object *)d);
             dictionary_appenddictionary(rd,
                                         gensym(root->name()),
@@ -790,6 +789,7 @@ void ext_main(void *r)
     ps_dictionary = gensym("dictionary");
     ps_0 = gensym("0");
     ps_ordering = gensym(".ordering");
+    ps_text = gensym(".text");
 }
 
 } // extern "C"
