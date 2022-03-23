@@ -116,7 +116,7 @@ static void rxml_anything(rxml *x,
         buflen += 250000;
         critical_enter(x->lock);
         char *buf = (char *)realloc(x->buf, x->buflen);
-        if(buf)
+        if(!buf)
         {
             object_error((t_object *)x, "Out of memory!\n");
             x->buf = NULL;
