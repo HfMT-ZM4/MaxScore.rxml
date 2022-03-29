@@ -214,7 +214,7 @@ static xml_node<> *rxml_toXML_entry(const rxml *x,
                     }
                     xml_attribute<> *attr =
                         doc->allocate_attribute(keys[i]->s_name + 1,
-                                                strdup(str));
+                                                _strdup(str));
                     node->append_attribute(attr);
                     // if(vals)
                     // {
@@ -551,7 +551,8 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
             a = a->next_attribute())
         {
             size_t n = strlen(a->name());
-            char key[n + 2];
+            // char key[n + 2];
+            char* key = (char*)alloca(n + 2);
             snprintf(key, n + 2, "@%s", a->name());
             {
                 t_atom *vals = NULL;
@@ -593,7 +594,8 @@ static void rxml_toJSON(rxml *x, const xml_node<> *node,
         }
 
         {
-            t_atom ordering[i];
+            // t_atom ordering[i];
+            t_atom* ordering = (t_atom *)alloca(i * sizeof(t_atom));
             i = 0;
             for(const xml_node<> *n = node->first_node();
                 n;
@@ -740,7 +742,7 @@ static void rxml_clear(rxml *x)
     clearbuf(x);
 }
 
-__attribute__((used))
+//__attribute__((used))
 static void clearbuf(rxml *x)
 {
     assert(x);
@@ -767,7 +769,7 @@ static void rxml_assist(rxml *x, void *b, long m, long a, char *s)
         // inlets
 		switch(a){
 		case 0:
-            sprintf(s, "Inlet");
+            snprintf(s, 32, "Inlet");
             break;
 		}
 	}
@@ -776,7 +778,7 @@ static void rxml_assist(rxml *x, void *b, long m, long a, char *s)
 		switch(a)
         {
 		case 0:
-            sprintf(s, "Outlet");
+            snprintf(s, 32, "Outlet");
             break;
 		}
 	}
