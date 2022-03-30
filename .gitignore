@@ -1,6 +1,7 @@
 *.[oa]
 *.mxo
 *.mxe
+*.mxe64
 *.pd_darwin
 *.class
 *.objinfo.txt
@@ -24,3 +25,7 @@ build-gcc
 !xcshareddata
 xcuserdata
 package-info.json
+
+.vs/
+x64/
+*.user
